@@ -59,15 +59,16 @@ def check_readme(files: list[Path]):
 
 
 def check_make(files: list[Path]):
-	print("Makefile check:")
 	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
 	found_rules = set()
 	make = None
 
+	print("Makefile check:")
 	for file in files:
 		if file.name == "Makefile" or file.name == "Make":
 			make = file
 			break
+
 	if make == None:
 		print("\t❌ No Makefile in this project")
 		return 
@@ -86,7 +87,7 @@ def check_make(files: list[Path]):
 					found_rules.add(rule)
 
 	if found_rules == required_rules:
-		print("\t✅ Makefile contains necessary rules")
+		print("\t✅ Found all rules")
 	else:
 		missing = required_rules - found_rules
 		print("\t❌ Missing rules: ", end='')
@@ -94,6 +95,14 @@ def check_make(files: list[Path]):
 			print(rule, end=' ')
 		print()
 
+	result = subprocess.run(["make", "all"], cwd=make.parent, capture_output=True)
+
+	if result.returncode == 0:
+		print("\t✅ No compilation errors")
+	else:
+		print("\t❌ Found compilation errors")
+
+	result = subprocess.run(["make", "fclean"], cwd=make.parent)
 	
 
 def run_checks(path: Path, files: list[Path]):
