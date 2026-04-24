@@ -10,6 +10,7 @@ def get_path():
 	return Path(os.path.abspath(sys.argv[1])) # gets the absolute path, handles the .
 
 
+
 def get_files(path: Path, files: list):
 	try:
 		for item in path.iterdir():
@@ -19,6 +20,7 @@ def get_files(path: Path, files: list):
 				files.append(item)
 	except PermissionError as e:
 		print(f"Permission denied: {e}")
+
 
 
 def check_norm(path: Path):
@@ -31,6 +33,7 @@ def check_norm(path: Path):
 		print("Norminette check: ✅")
 	else:
 		print("Norminette check: ❌")
+
 
 
 def check_extra_files(files: list[Path]):
@@ -46,21 +49,58 @@ def check_extra_files(files: list[Path]):
 			print(suffix, end=" ")
 		print()
 	else:
-		print("Extra files check: ✅")
+		print("Extra files check: ✅ No extra files")
+
 
 
 def check_readme(files: list[Path]):
 	pass
 
+
+
 def check_make(files: list[Path]):
-	pass
+	print("Makefile check:")
+	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
+	found_rules = set()
+	make = None
+
+	for file in files:
+		if file.name == "Makefile" or file.name == "Make":
+			make = file
+			break
+	if make == None:
+		print("\t❌ No Makefile in this project")
+		return 
+	else:
+		print("\t✅ Found Makefile")
+
+	with open(make, 'r') as f:
+		for line in f:
+			line = line.strip()
+			if ".PHONY" in line:
+				found_rules.add(".PHONY")
+				# add phony checks
+			elif ':' in line:
+				rule = line.split(':')[0].strip()
+				if rule in required_rules:
+					found_rules.add(rule)
+
+	if found_rules == required_rules:
+		print("\t✅ Makefile contains necessary rules")
+	else:
+		missing = required_rules - found_rules
+		print("\t❌ Missing rules: ", end='')
+		for rule in missing:
+			print(rule, end=' ')
+		print()
+
+	
 
 def run_checks(path: Path, files: list[Path]):
 	check_norm(path)
 	check_extra_files(files)
-	check_readme(files)
 	check_make(files)
-
+	check_readme(files)
 
 
 def main():
