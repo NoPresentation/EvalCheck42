@@ -5,10 +5,10 @@ import re
 from pathlib import Path
 
 def get_path():
-	if len(sys.argv) != 2:
-		print("evalcheck <path>")
-		sys.exit(1)
-	return Path(os.path.abspath(sys.argv[1])) # gets the absolute path, handles the .
+    if len(sys.argv) == 2:
+        return Path(sys.argv[1]).resolve()
+    else:
+        return Path.cwd()
 
 
 
@@ -42,7 +42,9 @@ def check_extra_files(files: list[Path]):
 	extensions = {".h", ".c", ".cpp", ".md"}
 	print("Extra files check (allowed: .c, .cpp, .h, .md): ")
 	for file in files:
-		if file.suffix not in extensions:
+		if file.name.startswith('.') and file.name != ".gitignore":
+			extra_files.add(file.name)
+		elif file.suffix and file.suffix not in extensions:
 			extra_files.add(file.suffix)
 
 	if len(extra_files) != 0:
@@ -99,6 +101,9 @@ def check_readme(files: list[Path]):
 	else:
 		print("\t✅ Found all sections")
 
+
+
+
 def check_make(files: list[Path]):
 	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
 	found_rules = set()
@@ -118,7 +123,7 @@ def check_make(files: list[Path]):
 
 	with open(make, 'r') as f:
 		for line in f:
-			if '#' not in line:
+			if not line.startswith('#'):
 				line = line.strip()
 				if ".PHONY" in line:
 					found_rules.add(".PHONY")
