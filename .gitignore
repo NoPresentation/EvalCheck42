@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 
 # Build / packaging
-dist/
+dist/   
 build/
 *.egg-info/
 

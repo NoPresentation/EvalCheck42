@@ -30,7 +30,7 @@ def check_extra_files(files: list[Path]):
 	extra_extensions = set()
 	extra_files = set()
 	extensions = {".h", ".c", ".cpp", ".md"}
-	allowed_files = {"makefile", "readme.md", "license"}
+	allowed_files = {"makefile", "readme.md", "license", ".gitignore"}
 
 	for file in files:
 		if file.name.startswith('.') and file.name != ".gitignore":
