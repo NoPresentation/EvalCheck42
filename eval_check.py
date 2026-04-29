@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+import re
 from pathlib import Path
 
 def get_path():
@@ -38,25 +39,65 @@ def check_norm(path: Path):
 
 def check_extra_files(files: list[Path]):
 	extra_files = set()
-
+	extensions = {".h", ".c", ".cpp", ".md"}
+	print("Extra files check (allowed: .c, .cpp, .h, .md): ")
 	for file in files:
-		if file.suffix != ".h" and file.suffix != ".c":
+		if file.suffix not in extensions:
 			extra_files.add(file.suffix)
 
 	if len(extra_files) != 0:
-		print("Extra files check:\n\t⚠️ Found files other than .c and .h:", end=" ")
+		print("\t⚠️ Found extra files", end=" ")
 		for suffix in extra_files:
 			print(suffix, end=" ")
 		print()
 	else:
-		print("Extra files check: ✅ No extra files")
+		print("✅ No extra files")
 
 
 
 def check_readme(files: list[Path]):
-	pass
+	readme = None
+	required_sections = {"description", "instructions", "resources"}
+	found_sections = set()
+	pattern = r"^[*_]this project has been created as part of the 42 curriculum by .+[*_]$"
 
+	print("README.md check:")
+	for file in files:
+		if file.name == "README.md":
+			readme = file
+			break
+	if readme == None:
+		print("\t❌README.md not found")
+		return
+	else:
+		print("\t✅ Found README.md")
 
+	with open(readme, 'r') as f:
+		lines = f.readlines()
+		if not lines:
+			print("❌ Empty readme")
+		first_line = lines[0].strip()
+		if re.match(pattern, first_line, re.IGNORECASE):
+			print("\t✅ First line format OK")
+		else:
+			print("\t❌ First line format invalid")
+		for line in lines:
+			if line.lstrip().startswith("#"):
+				l = line.lower()
+				if "description" in l:
+					found_sections.add("description")
+				elif "instructions" in l:
+					found_sections.add("instructions")
+				elif "resources" in l:
+					found_sections.add("resources")
+	missing = required_sections - found_sections
+	if len(missing):
+		print("\t❌ Missing sections: ", end='')
+		for section in missing:
+			print(f"{section}", end=' ')
+		print()
+	else:
+		print("\t✅ Found all sections")
 
 def check_make(files: list[Path]):
 	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
@@ -70,21 +111,22 @@ def check_make(files: list[Path]):
 			break
 
 	if make == None:
-		print("\t❌ No Makefile in this project")
+		print("\t❌ Makefile not found")
 		return 
 	else:
 		print("\t✅ Found Makefile")
 
 	with open(make, 'r') as f:
 		for line in f:
-			line = line.strip()
-			if ".PHONY" in line:
-				found_rules.add(".PHONY")
-				# add phony checks
-			elif ':' in line:
-				rule = line.split(':')[0].strip()
-				if rule in required_rules:
-					found_rules.add(rule)
+			if '#' not in line:
+				line = line.strip()
+				if ".PHONY" in line:
+					found_rules.add(".PHONY")
+					# add phony checks
+				elif ':' in line:
+					rule = line.split(':')[0].strip()
+					if rule in required_rules:
+						found_rules.add(rule)
 
 	if found_rules == required_rules:
 		print("\t✅ Found all rules")
