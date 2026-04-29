@@ -1,17 +1,33 @@
-import os
 import sys
 import subprocess
 import re
 from pathlib import Path
 
+class C:
+	OK = "\033[92m"
+	FAIL = "\033[91m"
+	INFO = "\033[94m"
+	END = "\033[0m"
+
+
+
+def ok(msg):
+	print(f"\t{C.OK}✅ {msg}{C.END}")
+
+def fail(msg):
+	print(f"\t{C.FAIL}❌ {msg}{C.END}")
+
+def info(msg):
+	print(f"\t{C.INFO}⚠️ {msg}{C.END}")
+
 
 
 
 def get_path():
-    if len(sys.argv) == 2:
-        return Path(sys.argv[1]).resolve()
-    else:
-        return Path.cwd()
+	if len(sys.argv) == 2:
+		return Path(sys.argv[1]).resolve()
+	else:
+		return Path.cwd()
 
 
 
@@ -26,58 +42,58 @@ def get_files(path: Path, files: list):
 				files.append(item)
 	except PermissionError as e:
 		print(f"Permission denied: {e}")
+		sys.exit(1)
 
 
 
 
 def check_norm(path: Path):
+	print("Norminette check:")
 	try:
-		result = subprocess.run(["norminette", str(path)], capture_output=True)
+		result = subprocess.run(["norminette", str(path)], capture_output=True, text=True)
 	except FileNotFoundError:
-		print("Norminette isn't installed on this machine. Abort.")
-		sys.exit(1)
+		fail("Norminette isn't installed on this machine.")
+		return
+
+	output = (result.stdout or "") + (result.stderr or "")
+
 	if result.returncode == 0:
-		print("Norminette check: ✅")
+		ok("No norm errors found")
 	else:
-		print("Norminette check: ❌")
+		if "Error" in output:
+			fail("Found norm errors")
+		if "Global" in output:
+			info("Global variable detected")
 
 
 
 
 def check_extra_files(files: list[Path]):
+	print("Extra files check (allowed: .c, .cpp, .h, .md):")
+
 	hidden = set()
 	extra_extensions = set()
 	extra_files = set()
 	extensions = {".h", ".c", ".cpp", ".md"}
 	allowed_files = {"makefile", "readme.md", "license"}
-	print("Extra files check (allowed: .c, .cpp, .h, .md): ")
 
 	for file in files:
 		if file.name.startswith('.') and file.name != ".gitignore":
 			hidden.add(file.name)
-		elif len(file.suffix) and file.suffix not in extensions:
+		elif file.suffix and file.suffix not in extensions:
 			extra_extensions.add(file.suffix)
-		elif len(file.suffix) == 0 and file.name.lower() not in allowed_files:
+		elif file.suffix == "" and file.name.lower() not in allowed_files:
 			extra_files.add(file.name)
 
-	if len(hidden) or len(extra_extensions) or len(extra_files):
-		if len(hidden):
-			print("\tFound hidden files: ", end='')
-			for f in hidden:
-				print(f, end=' ')
-			print()
-		if len(extra_extensions):
-			print("\tFound extra extensions: ", end='')
-			for e in extra_extensions:
-				print(e, end=' ')
-			print()
-		if len(extra_files):
-			print("\tFound extra files: ", end='')
-			for f in extra_files:
-				print(f, end=' ')
-			print()
+	if hidden or extra_extensions or extra_files:
+		if hidden:
+			fail("Hidden files: " + " ".join(hidden))
+		if extra_extensions:
+			info("Extra extensions: " + " ".join(extra_extensions))
+		if extra_files:
+			fail("Extra files: " + " ".join(extra_files))
 	else:
-		print("\tNo extra files")
+		ok("No extra files")
 
 
 
@@ -86,95 +102,106 @@ def check_readme(files: list[Path]):
 	readme = None
 	required_sections = {"description", "instructions", "resources"}
 	found_sections = set()
-	pattern = r"^[*_]this project has been created as part of the 42 curriculum by .+[*_]$"
+	pattern = r"^([*_])this project has been created as part of the 42 curriculum by .+\1$"
 
 	print("README.md check:")
 	for file in files:
 		if file.name == "README.md":
 			readme = file
 			break
-	if readme == None:
-		print("\t❌README.md not found")
+
+	if readme is None:
+		fail("README.md not found")
 		return
 	else:
-		print("\t✅ Found README.md")
+		ok("Found README.md")
 
-	with open(readme, 'r') as f:
-		lines = f.readlines()
-		if not lines:
-			print("❌ Empty readme")
-		first_line = lines[0].strip()
-		if re.match(pattern, first_line, re.IGNORECASE):
-			print("\t✅ First line format OK")
-		else:
-			print("\t❌ First line format invalid")
-		for line in lines:
-			if line.lstrip().startswith("#"):
-				l = line.lower()
-				if "description" in l:
-					found_sections.add("description")
-				elif "instructions" in l:
-					found_sections.add("instructions")
-				elif "resources" in l:
-					found_sections.add("resources")
+	try:
+		with open(readme, 'r') as f:
+			lines = f.readlines()
+	except PermissionError:
+		fail("Can't read file: Permission denied")
+		return
+	
+	if not lines:
+		fail("Empty readme")
+		return
+
+	first_line = lines[0].strip()
+
+	if re.match(pattern, first_line, re.IGNORECASE):
+		ok("First line format OK")
+	else:
+		fail("First line format invalid")
+
+	for line in lines:
+		if line.lstrip().startswith("#"):
+			l = line.lstrip('#').strip().lower()
+			if "description" in l:
+				found_sections.add("description")
+			elif "instructions" in l:
+				found_sections.add("instructions")
+			elif "resources" in l:
+				found_sections.add("resources")
+
 	missing = required_sections - found_sections
 	if len(missing):
-		print("\t❌ Missing sections: ", end='')
-		for section in missing:
-			print(f"{section}", end=' ')
-		print()
+		fail("Missing sections: " + " ".join(missing))
 	else:
-		print("\t✅ Found all sections")
+		ok("Found all sections")
 
 
 
 
 def check_make(files: list[Path]):
+	print("Makefile check:")
 	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
 	found_rules = set()
 	make = None
 
-	print("Makefile check:")
 	for file in files:
 		if file.name == "Makefile":
 			make = file
 			break
 
-	if make == None:
-		print("\t❌ Makefile not found")
-		return 
+	if make is None:
+		fail("Makefile not found")
+		return
 	else:
-		print("\t✅ Found Makefile")
-
-	with open(make, 'r') as f:
-		for line in f:
-			line = line.strip()
-			if not line.startswith('#'):
-				if line.startswith(".PHONY"):
-					found_rules.add(".PHONY")
-				elif ':' in line and not any(op in line for op in (":=", "+=", "?=")):
-					rule = line.split(':')[0].strip()
-					if rule in required_rules:
-						found_rules.add(rule)
+		ok("Found Makefile")
+	
+	try:
+		with open(make, 'r') as f:
+			lines = f.readlines()
+	except PermissionError:
+		fail("Can't read file: Permission denied")
+		return
+	
+	for line in lines:
+		line = line.strip()
+		if not line.startswith('#'):
+			if line.startswith(".PHONY"):
+				found_rules.add(".PHONY")
+			elif ':' in line and not any(op in line for op in (":=", "+=", "?=")):
+				rule = line.split(':')[0].strip()
+				if rule in required_rules:
+					found_rules.add(rule)
 
 	if found_rules == required_rules:
-		print("\t✅ Found all rules")
+		ok("Found all rules")
 	else:
 		missing = required_rules - found_rules
-		print("\t❌ Missing rules: ", end='')
-		for rule in missing:
-			print(rule, end=' ')
-		print()
+		fail("Missing rules: " + " ".join(missing))
 
 	result = subprocess.run(["make", "all"], cwd=make.parent, capture_output=True)
 
 	if result.returncode == 0:
-		print("\t✅ No compilation errors")
+		ok("No compilation errors")
 	else:
-		print("\t❌ Found compilation errors")
+		fail("Found compilation errors")
 
 	subprocess.run(["make", "fclean"], cwd=make.parent, capture_output=True)
-	
+
 
 
 
@@ -186,12 +213,13 @@ def run_checks(path: Path, files: list[Path]):
 
 
 
+
 def main():
 	path = get_path()
-	print("Path: ", path)
 	files = []
 	get_files(path, files)
 	run_checks(path, files)
+
 
 
 
