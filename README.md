@@ -1,4 +1,4 @@
-# evalcheck42
+# Evalcheck42
 
 A command-line tool for checking 42 projects before evaluations to help avoid common errors and mistakes.
 
@@ -50,7 +50,7 @@ pip install evalcheck42
 
 ## Usage
 
-You can run it on the current directory:
+You can run it in the current directory:
 ```bash
 evalcheck
 ```
