@@ -136,7 +136,7 @@ def check_make(files: list[Path]):
 
 	print("Makefile check:")
 	for file in files:
-		if file.name == "Makefile" or file.name == "Make":
+		if file.name == "Makefile":
 			make = file
 			break
 
@@ -148,12 +148,11 @@ def check_make(files: list[Path]):
 
 	with open(make, 'r') as f:
 		for line in f:
+			line = line.strip()
 			if not line.startswith('#'):
-				line = line.strip()
-				if ".PHONY" in line:
+				if line.startswith(".PHONY"):
 					found_rules.add(".PHONY")
-					# add phony checks
-				elif ':' in line:
+				elif ':' in line and not any(op in line for op in (":=", "+=", "?=")):
 					rule = line.split(':')[0].strip()
 					if rule in required_rules:
 						found_rules.add(rule)
@@ -174,16 +173,16 @@ def check_make(files: list[Path]):
 	else:
 		print("\t❌ Found compilation errors")
 
-	result = subprocess.run(["make", "fclean"], cwd=make.parent)
+	subprocess.run(["make", "fclean"], cwd=make.parent, capture_output=True)
 	
 
 
 
 def run_checks(path: Path, files: list[Path]):
 	check_norm(path)
-	check_extra_files(files)
-	check_make(files)
 	check_readme(files)
+	check_make(files)
+	check_extra_files(files)
 
 
 
