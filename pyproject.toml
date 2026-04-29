@@ -3,15 +3,15 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "evalcheck"
+name = "evalcheck42"
 version = "0.5.0"
 description = "A pre-evaluation checker for 42 school projects"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "Ahmad Nashwan", email = "ahmad.nashwan.07@gmail" }
+    { name = "Ahmad Nashwan", email = "ahmad.nashwan.07@gmail.com" }
 ]
 
 [project.scripts]
-evalcheck = "evalcheck.main:main"
+evalcheck = "evalcheck42.main:main"
