@@ -4,6 +4,9 @@ import subprocess
 import re
 from pathlib import Path
 
+
+
+
 def get_path():
     if len(sys.argv) == 2:
         return Path(sys.argv[1]).resolve()
@@ -12,15 +15,18 @@ def get_path():
 
 
 
+
 def get_files(path: Path, files: list):
 	try:
 		for item in path.iterdir():
 			if item.is_dir():
-				get_files(item, files)
+				if not item.name.startswith('.'):
+					get_files(item, files)
 			else:
 				files.append(item)
 	except PermissionError as e:
 		print(f"Permission denied: {e}")
+
 
 
 
@@ -37,23 +43,42 @@ def check_norm(path: Path):
 
 
 
+
 def check_extra_files(files: list[Path]):
+	hidden = set()
+	extra_extensions = set()
 	extra_files = set()
 	extensions = {".h", ".c", ".cpp", ".md"}
+	allowed_files = {"makefile", "readme.md", "license"}
 	print("Extra files check (allowed: .c, .cpp, .h, .md): ")
+
 	for file in files:
 		if file.name.startswith('.') and file.name != ".gitignore":
+			hidden.add(file.name)
+		elif len(file.suffix) and file.suffix not in extensions:
+			extra_extensions.add(file.suffix)
+		elif len(file.suffix) == 0 and file.name.lower() not in allowed_files:
 			extra_files.add(file.name)
-		elif file.suffix and file.suffix not in extensions:
-			extra_files.add(file.suffix)
 
-	if len(extra_files) != 0:
-		print("\t⚠️ Found extra files", end=" ")
-		for suffix in extra_files:
-			print(suffix, end=" ")
-		print()
+	if len(hidden) or len(extra_extensions) or len(extra_files):
+		if len(hidden):
+			print("\tFound hidden files: ", end='')
+			for f in hidden:
+				print(f, end=' ')
+			print()
+		if len(extra_extensions):
+			print("\tFound extra extensions: ", end='')
+			for e in extra_extensions:
+				print(e, end=' ')
+			print()
+		if len(extra_files):
+			print("\tFound extra files: ", end='')
+			for f in extra_files:
+				print(f, end=' ')
+			print()
 	else:
-		print("✅ No extra files")
+		print("\tNo extra files")
+
 
 
 
@@ -152,11 +177,14 @@ def check_make(files: list[Path]):
 	result = subprocess.run(["make", "fclean"], cwd=make.parent)
 	
 
+
+
 def run_checks(path: Path, files: list[Path]):
 	check_norm(path)
 	check_extra_files(files)
 	check_make(files)
 	check_readme(files)
+
 
 
 def main():
@@ -165,6 +193,8 @@ def main():
 	files = []
 	get_files(path, files)
 	run_checks(path, files)
+
+
 
 if __name__ == "__main__":
 	main()
