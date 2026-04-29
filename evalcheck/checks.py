@@ -1,50 +1,7 @@
-import sys
-import subprocess
-import re
 from pathlib import Path
-
-class C:
-	OK = "\033[92m"
-	FAIL = "\033[91m"
-	INFO = "\033[94m"
-	END = "\033[0m"
-
-
-
-def ok(msg):
-	print(f"\t{C.OK}✅ {msg}{C.END}")
-
-def fail(msg):
-	print(f"\t{C.FAIL}❌ {msg}{C.END}")
-
-def info(msg):
-	print(f"\t{C.INFO}⚠️ {msg}{C.END}")
-
-
-
-
-def get_path():
-	if len(sys.argv) == 2:
-		return Path(sys.argv[1]).resolve()
-	else:
-		return Path.cwd()
-
-
-
-
-def get_files(path: Path, files: list):
-	try:
-		for item in path.iterdir():
-			if item.is_dir():
-				if not item.name.startswith('.'):
-					get_files(item, files)
-			else:
-				files.append(item)
-	except PermissionError as e:
-		print(f"Permission denied: {e}")
-		sys.exit(1)
-
-
+import re
+import subprocess
+from evalcheck.output_utils import ok, fail, info
 
 
 def check_norm(path: Path):
@@ -64,8 +21,6 @@ def check_norm(path: Path):
 			fail("Found norm errors")
 		if "Global" in output:
 			info("Global variable detected")
-
-
 
 
 def check_extra_files(files: list[Path]):
@@ -94,8 +49,6 @@ def check_extra_files(files: list[Path]):
 			fail("Extra files: " + " ".join(extra_files))
 	else:
 		ok("No extra files")
-
-
 
 
 def check_readme(files: list[Path]):
@@ -151,8 +104,6 @@ def check_readme(files: list[Path]):
 		ok("Found all sections")
 
 
-
-
 def check_make(files: list[Path]):
 	print("Makefile check:")
 	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
@@ -201,27 +152,3 @@ def check_make(files: list[Path]):
 		fail("Found compilation errors")
 
 	subprocess.run(["make", "fclean"], cwd=make.parent, capture_output=True)
-
-
-
-
-def run_checks(path: Path, files: list[Path]):
-	check_norm(path)
-	check_readme(files)
-	check_make(files)
-	check_extra_files(files)
-
-
-
-
-def main():
-	path = get_path()
-	files = []
-	get_files(path, files)
-	run_checks(path, files)
-
-
-
-
-if __name__ == "__main__":
-	main()
