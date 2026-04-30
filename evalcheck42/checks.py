@@ -1,7 +1,7 @@
 from pathlib import Path
 import re
 import subprocess
-from evalcheck.output_utils import ok, fail, info
+from evalcheck42.output_utils import ok, fail, info
 
 
 def check_norm(path: Path):
