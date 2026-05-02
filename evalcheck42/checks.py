@@ -5,7 +5,6 @@ from evalcheck42.output_utils import ok, fail, info
 
 
 def check_norm(path: Path):
-	print("Norminette check:")
 	try:
 		result = subprocess.run(["norminette", str(path)], capture_output=True, text=True)
 	except FileNotFoundError:
@@ -24,8 +23,6 @@ def check_norm(path: Path):
 
 
 def check_extra_files(files: list[Path]):
-	print("Extra files check (allowed: .c, .cpp, .h, .md):")
-
 	hidden = set()
 	extra_extensions = set()
 	extra_files = set()
@@ -57,7 +54,6 @@ def check_readme(files: list[Path]):
 	found_sections = set()
 	pattern = r"^([*_])this project has been created as part of the 42 curriculum by .+\1$"
 
-	print("README.md check:")
 	for file in files:
 		if file.name == "README.md":
 			readme = file
@@ -105,7 +101,6 @@ def check_readme(files: list[Path]):
 
 
 def check_make(files: list[Path]):
-	print("Makefile check:")
 	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
 	found_rules = set()
 	make = None
