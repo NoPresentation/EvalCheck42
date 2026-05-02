@@ -25,6 +25,7 @@ It performs automated checks for common submission requirements such as Norminet
 
   * `all`, `clean`, `fclean`, `re`, `.PHONY`
 * Runs (`make all`) to check for any compilation errors
+* Runs (`make fclean`) to check if it leaves any extra files
 
 ### Extra files
 
