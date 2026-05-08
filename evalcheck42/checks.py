@@ -78,7 +78,7 @@ def check_readme(files: list[Path]):
 
 	first_line = lines[0].strip()
 
-	if re.match(pattern, first_line, re.IGNORECASE):
+	if re.match(pattern, first_line):
 		ok("First line format OK")
 	else:
 		fail("First line format invalid")
@@ -101,7 +101,7 @@ def check_readme(files: list[Path]):
 
 
 def check_make(files: list[Path]):
-	required_rules = {"all", "clean", "fclean", "re", ".PHONY"}
+	required_rules = {"all", "$(NAME)", "clean", "fclean", "re", ".PHONY"}
 	found_rules = set()
 	make = None
 
