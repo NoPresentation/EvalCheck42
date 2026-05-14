@@ -52,8 +52,7 @@ def check_readme(files: list[Path]):
 	readme = None
 	required_sections = {"description", "instructions", "resources"}
 	found_sections = set()
-	pattern = r"^([*_])this project has been created as part of the 42 curriculum by .+\1$"
-
+	pattern = r"^([*_])This project has been created as part of the 42 curriculum by ([A-Za-z0-9_-]+(?:, [A-Za-z0-9_-]+)*)\1$"
 	for file in files:
 		if file.name == "README.md":
 			readme = file
